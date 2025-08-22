@@ -2,8 +2,8 @@
 
 A sophisticated web-based platform for orchestrating conversations between multiple AI agents around a virtual roundtable. Create, customize, and manage dynamic multi-agent discussions with branching conversations, real-time interactions, and advanced AI features.
 
+<img width="2072" height="1383" alt="Screenshot 2025-08-22 094515" src="https://github.com/user-attachments/assets/da49e225-9433-4d7b-851c-ae8cefaaee2b" />
 
-<img width="2086" height="1381" alt="Screenshot 2025-08-22 094232" src="https://github.com/user-attachments/assets/4404a222-36d0-4236-9f66-8a89abc5c8a1" />
 
 
 ## 🚀 Features
