@@ -1,0 +1,3316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Multi-Agent Chat Studio</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --secondary: #8b5cf6;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --dark: #1f2937;
+      --dark-bg: #111827;
+      --dark-card: #1f2937;
+      --dark-border: #374151;
+      --light: #f9fafb;
+      --light-bg: #ffffff;
+      --light-card: #ffffff;
+      --light-border: #e5e7eb;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --sidebar-width: 320px;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--light);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+    
+    body.dark {
+      --light: var(--dark-bg);
+      --light-bg: var(--dark-bg);
+      --light-card: var(--dark-card);
+      --light-border: var(--dark-border);
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+    }
+    
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--light-card);
+      border-right: 1px solid var(--light-border);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s;
+    }
+    
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--light-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--light-border);
+    }
+    
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .tab.active {
+      color: var(--primary);
+      border-bottom: 2px solid var(--primary);
+    }
+    
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .chat-header {
+      background: var(--light-card);
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--light-border);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .chat-container {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    /* Compact Agent Cards */
+    .agent-card {
+      background: var(--light-card);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid var(--light-border);
+      transition: all 0.2s;
+    }
+    
+    .agent-card.collapsed {
+      padding: 8px 12px;
+    }
+    
+    .agent-card.collapsed .agent-details {
+      display: none;
+    }
+    
+    .agent-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    
+    .agent-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    
+    .agent-name-input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid var(--light-border);
+      border-radius: 6px;
+      background: var(--light-bg);
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+    
+    .agent-actions {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--light-border);
+      background: var(--light-bg);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .icon-btn:hover {
+      background: var(--light-border);
+    }
+    
+    .agent-details {
+      margin-top: 12px;
+    }
+    
+    /* Form Elements */
+    input, textarea, select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--light-border);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      background: var(--light-bg);
+      color: var(--text-primary);
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    
+    .slider-group {
+      margin: 10px 0;
+    }
+    
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--text-secondary);
+    }
+    
+    .slider {
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--light-border);
+      outline: none;
+      -webkit-appearance: none;
+    }
+    
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+    }
+    
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: var(--primary-dark);
+    }
+    
+    button:disabled {
+      background: var(--text-secondary);
+      cursor: not-allowed;
+    }
+    
+    /* Message Styles */
+    .message {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .message.user-inserted {
+      background: var(--light-bg);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px dashed var(--light-border);
+    }
+    
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    
+    .message-content {
+      flex: 1;
+      background: var(--light-card);
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--light-border);
+    }
+    
+    .message-header {
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .message-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .message:hover .message-actions {
+      opacity: 1;
+    }
+    
+    .message-text {
+      color: var(--text-primary);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    
+    /* Markdown styles */
+    .message-text pre {
+      background: var(--dark-bg);
+      color: #f9fafb;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 8px 0;
+    }
+    
+    .message-text code {
+      background: var(--light-border);
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-size: 13px;
+    }
+    
+    .message-text pre code {
+      background: none;
+      padding: 0;
+    }
+    
+    /* Control Panel */
+    .control-panel {
+      background: var(--light-card);
+      padding: 12px 20px;
+      border-top: 1px solid var(--light-border);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    /* Modals */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .modal-content {
+      background: var(--light-card);
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 24px;
+      border-radius: 12px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+    
+    /* Template Grid */
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    
+    .template-card {
+      padding: 16px;
+      border: 1px solid var(--light-border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--light-bg);
+    }
+    
+    .template-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .template-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    /* Analytics */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    
+    .analytics-card {
+      background: var(--light-bg);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--light-border);
+    }
+    
+    .word-cloud {
+      text-align: center;
+      padding: 20px;
+      min-height: 200px;
+    }
+    
+    .word-cloud span {
+      display: inline-block;
+      margin: 4px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .word-cloud span:hover {
+      transform: scale(1.2);
+    }
+    
+    /* AI Features Panel */
+    .ai-panel {
+      background: var(--light-bg);
+      border: 1px solid var(--light-border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .ai-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    
+    /* Search Bar */
+    .search-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .search-input {
+      flex: 1;
+    }
+    
+    /* Branching */
+    .branch-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--light-bg);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+    
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      width: 42px;
+      height: 24px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--text-secondary);
+      transition: .3s;
+      border-radius: 24px;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+      background: var(--primary);
+    }
+    
+    input:checked + .toggle-slider:before {
+      transform: translateX(18px);
+    }
+    
+    /* Flow Diagram */
+    .flow-diagram {
+      min-height: 300px;
+      background: var(--light-bg);
+      border: 1px solid var(--light-border);
+      border-radius: 8px;
+      padding: 20px;
+      overflow: auto;
+    }
+    
+    /* Sentiment Bar */
+    .sentiment-bar {
+      height: 30px;
+      background: linear-gradient(to right, #ef4444, #f59e0b, #10b981);
+      border-radius: 15px;
+      position: relative;
+      margin: 10px 0;
+    }
+    
+    .sentiment-indicator {
+      position: absolute;
+      top: -5px;
+      width: 40px;
+      height: 40px;
+      background: white;
+      border: 3px solid var(--primary);
+      border-radius: 50%;
+      transform: translateX(-50%);
+      transition: left 0.3s;
+    }
+    
+    /* Loading */
+    .typing-indicator {
+      display: flex;
+      gap: 3px;
+      padding: 8px;
+    }
+    
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-secondary);
+      animation: typing 1.4s infinite;
+    }
+    
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-10px); }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        z-index: 999;
+        height: 100vh;
+        transform: translateX(-100%);
+      }
+      
+      .sidebar.show {
+        transform: translateX(0);
+      }
+      
+      .control-panel {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h3 style="margin: 0; font-size: 18px;">🤖 Agent Studio</h3>
+        <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">🌓</button>
+      </div>
+      
+      <div class="sidebar-tabs">
+        <button class="tab active" onclick="switchTab('agents')">Agents</button>
+        <button class="tab" onclick="switchTab('templates')">Templates</button>
+        <button class="tab" onclick="switchTab('settings')">Settings</button>
+      </div>
+      
+      <div class="sidebar-content" id="agentsTab">
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 13px; color: var(--text-secondary);">Number of Agents</label>
+          <select id="agentCount" onchange="updateAgentCount()" style="margin-top: 4px;">
+            <option value="2">2 agents</option>
+            <option value="3" selected>3 agents</option>
+            <option value="4">4 agents</option>
+            <option value="5">5 agents</option>
+            <option value="6">6 agents</option>
+            <option value="7">7 agents</option>
+            <option value="8">8 agents</option>
+            <option value="9">9 agents</option>
+            <option value="10">10 agents</option>
+            <option value="11">11 agents</option>
+            <option value="12">12 agents</option>
+            <option value="13">13 agents</option>
+            <option value="14">14 agents</option>
+            <option value="15">15 agents</option>
+            <option value="16">16 agents</option>
+            <option value="17">17 agents</option>
+            <option value="18">18 agents</option>
+            <option value="19">19 agents</option>
+            <option value="20">20 agents</option>
+          </select>
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 13px; color: var(--text-secondary);">Initial Prompt</label>
+          <textarea id="initialPrompt" placeholder="What should the first agent discuss?" style="margin-top: 4px;"></textarea>
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 13px; color: var(--text-secondary);">Start with Agent</label>
+          <select id="startingAgent" style="margin-top: 4px;">
+            <option value="0">Agent 1 (Default)</option>
+          </select>
+        </div>
+        
+        <div id="agentList"></div>
+        
+        <div style="margin-top: 8px;">
+          <button onclick="addAgent()" style="width: 100%; margin-bottom: 8px;">+ Add Agent</button>
+          <button onclick="showQuickAgents()" style="width: 100%; background: var(--secondary);">⚡ Quick Add Agents</button>
+        </div>
+      </div>
+      
+      <div class="sidebar-content" id="templatesTab" style="display: none;">
+        <button onclick="showTemplateLibrary()" style="width: 100%; margin-bottom: 8px;">📚 Template Library</button>
+        <button onclick="createTemplate()" style="width: 100%; margin-bottom: 8px;">✨ Create Template</button>
+        <button onclick="importTemplate()" style="width: 100%;">📥 Import Template</button>
+        
+        <div style="margin-top: 16px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 14px;">Recent Templates</h4>
+          <div id="recentTemplates"></div>
+        </div>
+      </div>
+      
+      <div class="sidebar-content" id="settingsTab" style="display: none;">
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 13px; font-weight: 600;">API Configuration</label>
+          <div style="margin-top: 8px;">
+            <label style="font-size: 12px; display: block; margin-bottom: 4px;">API Endpoint</label>
+            <input type="text" id="apiEndpoint" value="http://localhost:1234/v1" 
+                   placeholder="http://localhost:1234/v1" 
+                   style="width: 100%; margin-bottom: 8px;" 
+                   title="API endpoint URL (default: LMStudio)">
+            
+            <label style="font-size: 12px; display: block; margin-bottom: 4px;">API Key</label>
+            <input type="password" id="apiKey" 
+                   placeholder="Enter your API key (optional for local servers)" 
+                   style="width: 100%; margin-bottom: 8px;" 
+                   title="API key for authentication">
+          </div>
+        </div>
+        
+        <div class="ai-panel">
+          <div class="ai-toggle">
+            <span style="font-weight: 600;">AI Features</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="aiEnabled" checked onchange="toggleAIFeatures()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <button onclick="testConnection()" style="font-size: 12px; padding: 4px 8px; margin: 8px 0; width: 100%;">Test API Connection</button>
+          <div id="aiFeatures" style="margin-top: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <input type="checkbox" id="autoSuggest" checked>
+              <span style="font-size: 13px;">Auto-suggest next agent</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <input type="checkbox" id="summarization" checked>
+              <span style="font-size: 13px;">Conversation summarization</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="topicExtraction" checked>
+              <span style="font-size: 13px;">Topic extraction</span>
+            </label>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 13px; font-weight: 600;">System Prompt Template</label>
+          <textarea id="systemPrompt" rows="8" style="margin-top: 4px; font-size: 12px;">You are {{agentName}}. {{persona}}
+
+There are {{agentCount}} agents in this conversation:
+{{agentDescriptions}}
+
+Each agent takes turns speaking. At the end of your message, you must decide who to pass the conversation to by ending with:
+[To: AgentName]
+
+❗ You may not choose yourself. Choose the next speaker based on relevance or natural conversation flow.</textarea>
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 13px; font-weight: 600;">Default Temperature</label>
+          <div class="slider-group">
+            <div class="slider-label">
+              <span>Temperature</span>
+              <span id="defaultTempValue">0.7</span>
+            </div>
+            <input type="range" class="slider" id="defaultTemp" min="0" max="1" step="0.1" value="0.7" oninput="updateSliderValue('defaultTemp', 'defaultTempValue')">
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 13px; font-weight: 600;">AI Model Selection</label>
+          <div style="margin-top: 8px;">
+            <label style="font-size: 12px; display: block; margin-bottom: 4px;">Default AI Model</label>
+            <select id="defaultAIModel" style="width: 100%;" title="Default model for AI features like agent suggestions">
+              <option value="">Auto (use first available)</option>
+            </select>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 13px; font-weight: 600;">Context Management</label>
+          <div style="margin-top: 8px;">
+            <label style="font-size: 12px; display: block; margin-bottom: 4px;">Max Context Messages</label>
+            <input type="number" id="maxContextMessages" value="20" min="5" max="100" style="width: 100%;" 
+                   title="Maximum number of previous messages to include as context for each agent">
+          </div>
+          <div style="margin-top: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+              <input type="checkbox" id="smartContextTrimming" checked>
+              <span>Smart context trimming (keep important messages)</span>
+            </label>
+          </div>
+        </div>
+        
+        <button onclick="saveSettings()" style="width: 100%;">Save Settings</button>
+      </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="chat-header">
+        <button class="icon-btn" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+        <h3 style="margin: 0; font-size: 16px; flex: 1;">Multi-Agent Conversation</h3>
+        <div id="connectionStatus" style="font-size: 12px; color: var(--text-secondary); margin-right: 12px;">
+          <span id="statusIndicator">🔴</span> <span id="statusText">Disconnected</span>
+        </div>
+        <button class="icon-btn" onclick="searchMessages()" title="Search messages">🔍</button>
+        <button class="icon-btn" onclick="showAnalytics()" title="Analytics">📊</button>
+        <button class="icon-btn" onclick="showBranches()" title="Branches">🌳</button>
+        <button class="icon-btn" onclick="clearChat()" title="Clear chat">🗑️</button>
+        <button class="icon-btn" onclick="exportChat()" title="Export">💾</button>
+      </div>
+      
+      <div class="search-bar" id="searchBar" style="display: none; padding: 12px 20px; background: var(--light-card); border-bottom: 1px solid var(--light-border);">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search messages..." onkeyup="performSearch(event)">
+        <button onclick="closeSearch()">✕</button>
+      </div>
+      
+      <div class="chat-container" id="chatContainer"></div>
+      
+      <div class="control-panel">
+        <button id="startBtn" onclick="startConversation()">▶️ Start</button>
+        <button id="pauseBtn" onclick="pauseConversation()" style="display: none;">⏸️ Pause</button>
+        <button id="stopBtn" onclick="stopConversation()" style="display: none;">⏹️ Stop</button>
+        <button id="nextBtn" onclick="nextTurn()" style="display: none;">Next ➡️</button>
+        <button onclick="insertMessage()" title="Insert message">💬 Insert</button>
+        
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="display: flex; align-items: center; gap: 4px; margin: 0;">
+            <span style="font-size: 13px;">Auto</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="autoMode" checked onchange="updateUI()">
+              <span class="toggle-slider"></span>
+            </label>
+          </label>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="font-size: 13px; margin: 0;">Delay (ms):</label>
+          <input type="number" id="turnDelay" value="1000" min="0" max="5000" style="width: 70px;">
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="font-size: 13px; margin: 0;">Max Turns:</label>
+          <input type="number" id="maxTurns" value="10" min="2" max="100" style="width: 60px;">
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modals -->
+  <div class="modal" id="templateModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Template Library</h2>
+        <button class="icon-btn" onclick="closeModal('templateModal')">✕</button>
+      </div>
+      <div class="template-grid" id="templateGrid"></div>
+    </div>
+  </div>
+  
+  <div class="modal" id="analyticsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Conversation Analytics</h2>
+        <button class="icon-btn" onclick="closeModal('analyticsModal')">✕</button>
+      </div>
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <h3 style="margin: 0 0 12px 0; font-size: 16px;">Word Cloud</h3>
+          <div class="word-cloud" id="wordCloud"></div>
+        </div>
+        <div class="analytics-card">
+          <h3 style="margin: 0 0 12px 0; font-size: 16px;">Sentiment Analysis</h3>
+          <div class="sentiment-bar">
+            <div class="sentiment-indicator" id="sentimentIndicator" style="left: 50%;"></div>
+          </div>
+          <p style="text-align: center; margin: 8px 0 0 0; font-size: 14px;">
+            <span id="sentimentText">Neutral</span>
+          </p>
+        </div>
+        <div class="analytics-card" style="grid-column: 1 / -1;">
+          <h3 style="margin: 0 0 12px 0; font-size: 16px;">Conversation Flow</h3>
+          <div class="flow-diagram" id="flowDiagram"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal" id="insertModal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>Insert Message</h2>
+        <button class="icon-btn" onclick="closeModal('insertModal')">✕</button>
+      </div>
+      <div>
+        <label style="font-size: 14px; margin-bottom: 4px; display: block;">Insert After</label>
+        <select id="insertAfter" style="margin-bottom: 12px;">
+          <option value="0">Beginning of conversation</option>
+        </select>
+        
+        <label style="font-size: 14px; margin-bottom: 4px; display: block;">Message</label>
+        <textarea id="insertContent" rows="4" placeholder="Type your message..."></textarea>
+        
+        <label style="font-size: 14px; margin-bottom: 4px; display: block;">As Agent</label>
+        <select id="insertAgent" style="margin-bottom: 16px;"></select>
+        
+        <button onclick="confirmInsert()" style="width: 100%;">Insert Message</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="quickAgentsModal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>Quick Add Agents</h2>
+        <button class="icon-btn" onclick="closeModal('quickAgentsModal')">✕</button>
+      </div>
+      <div class="template-grid" id="quickAgentsGrid"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+  <script>
+    // Helper functions for API configuration
+    function getApiEndpoint() {
+      const apiEndpointEl = document.getElementById('apiEndpoint');
+      return apiEndpointEl ? apiEndpointEl.value : 'http://localhost:1234/v1';
+    }
+    
+    function getApiKey() {
+      const apiKeyEl = document.getElementById('apiKey');
+      return apiKeyEl ? apiKeyEl.value : '';
+    }
+    
+    function getApiHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      const apiKey = getApiKey();
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+      return headers;
+    }
+    
+    // State - Initialize all arrays
+    let agents = [];
+    let availableModels = ['default-model'];
+    let conversation = [];
+    let branches = [];
+    let currentBranch = 'main';
+    let currentTurn = 0;
+    let isPaused = false;
+    let isRunning = false;
+    let agentColors = {};
+    let messageHistory = {};
+    let templates = [];
+    let aiFeatures = {
+      enabled: true,
+      autoSuggest: true,
+      summarization: true,
+      topicExtraction: true
+    };
+    
+    // Keep track of intervals and timeouts for cleanup
+    let connectionCheckInterval = null;
+    let apiAvailable = true; // Track API availability to prevent repeated failed requests
+    
+    // Color palette
+    const colorPalette = [
+      '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+      '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'
+    ];
+    
+    // Quick agent templates
+    const quickAgentTemplates = [
+      {
+        name: "Analyst",
+        persona: "Data-driven professional who analyzes information methodically, provides evidence-based insights, and asks probing questions to understand root causes.",
+        temperature: 0.3
+      },
+      {
+        name: "Creative",
+        persona: "Imaginative thinker who approaches problems with out-of-the-box solutions, uses metaphors and storytelling, and encourages bold, innovative ideas.",
+        temperature: 0.9
+      },
+      {
+        name: "Devil's Advocate",
+        persona: "Critical thinker who challenges assumptions, points out potential flaws, and ensures all perspectives are considered before making decisions.",
+        temperature: 0.6
+      },
+      {
+        name: "Optimist",
+        persona: "Positive, solution-focused individual who sees opportunities in challenges, motivates others, and maintains hope even in difficult situations.",
+        temperature: 0.7
+      },
+      {
+        name: "Expert",
+        persona: "Subject matter specialist with deep technical knowledge, precise terminology, and practical experience in implementing solutions.",
+        temperature: 0.4
+      },
+      {
+        name: "Mediator",
+        persona: "Diplomatic facilitator who helps find common ground, summarizes different viewpoints, and guides discussions toward consensus.",
+        temperature: 0.5
+      },
+      {
+        name: "Visionary",
+        persona: "Forward-thinking strategist who focuses on long-term implications, emerging trends, and transformative possibilities.",
+        temperature: 0.8
+      },
+      {
+        name: "Pragmatist",
+        persona: "Practical problem-solver who focuses on what's realistic, considers constraints and resources, and emphasizes actionable steps.",
+        temperature: 0.4
+      }
+    ];
+    
+    // Default templates
+    const defaultTemplates = [
+      {
+        id: 'philosophy',
+        name: "Philosophical Debate",
+        description: "Great thinkers discuss life's big questions",
+        agents: [
+          { name: "Socrates", persona: "Ancient Greek philosopher who uses the Socratic method", temperature: 0.8 },
+          { name: "Nietzsche", persona: "German philosopher known for nihilism and 'God is dead'", temperature: 0.9 },
+          { name: "Buddha", persona: "Enlightened teacher focused on suffering and liberation", temperature: 0.7 }
+        ],
+        prompt: "What is the meaning of life?"
+      },
+      {
+        id: 'tech',
+        name: "Tech Brainstorm",
+        description: "Innovators collaborate on cutting-edge ideas",
+        agents: [
+          { name: "Steve", persona: "Visionary product designer obsessed with simplicity", temperature: 0.7 },
+          { name: "Elon", persona: "Ambitious engineer pushing boundaries of what's possible", temperature: 0.9 },
+          { name: "Satoshi", persona: "Cryptography expert focused on decentralization", temperature: 0.6 }
+        ],
+        prompt: "How can we revolutionize digital payments?"
+      },
+      {
+        id: 'creative',
+        name: "Creative Writing",
+        description: "Master storytellers craft narratives together",
+        agents: [
+          { name: "Hemingway", persona: "Concise writer who values brevity and clarity", temperature: 0.5 },
+          { name: "Shakespeare", persona: "Poetic dramatist with elaborate metaphors", temperature: 0.9 },
+          { name: "Tolkien", persona: "World-builder creating rich, detailed universes", temperature: 0.8 }
+        ],
+        prompt: "Let's collaboratively write a story about a mysterious artifact"
+      }
+    ];
+    
+    // Initialize
+    async function init() {
+      // Initialize availableModels first
+      availableModels = ['default-model'];
+      
+      try {
+        await fetchModels();
+      } catch (error) {
+        console.error('Failed to fetch models, using default:', error);
+      }
+      
+      loadFromStorage();
+      loadTemplates();
+      renderAgents();
+      updateUI();
+      
+      // Set initial agent count - ensure it's valid
+      const agentCountEl = document.getElementById('agentCount');
+      if (agentCountEl) {
+        if (agents.length >= 2 && agents.length <= 20) {
+          agentCountEl.value = agents.length;
+        } else {
+          agentCountEl.value = 3;
+        }
+      }
+      
+      // Check connection periodically and populate AI model dropdown
+      if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+      }
+      connectionCheckInterval = setInterval(checkConnection, 10000); // Check every 10 seconds
+      checkConnection(); // Initial check
+      fetchModels(); // Get available models and populate dropdown
+    }
+    
+    async function fetchModels() {
+      try {
+        const res = await fetch(`${getApiEndpoint()}/models`, {
+          headers: getApiHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to fetch models');
+        const data = await res.json();
+        if (data && data.data && Array.isArray(data.data)) {
+          availableModels = data.data.map(m => m && m.id ? m.id : 'unknown-model').filter(id => id !== 'unknown-model');
+          if (availableModels.length === 0) {
+            availableModels = ['default-model'];
+          }
+        } else {
+          availableModels = ['default-model'];
+        }
+        updateConnectionStatus(true);
+        updateAIModelDropdown();
+      } catch (error) {
+        console.error('Failed to fetch models:', error);
+        availableModels = ['default-model'];
+        updateConnectionStatus(false);
+        updateAIModelDropdown();
+      }
+    }
+    
+    function updateAIModelDropdown() {
+      const dropdown = document.getElementById('defaultAIModel');
+      if (dropdown) {
+        const currentValue = dropdown.value;
+        dropdown.innerHTML = '<option value="">Auto (use first available)</option>' + 
+          availableModels.map(model => 
+            `<option value="${model}" ${model === currentValue ? 'selected' : ''}>${model}</option>`
+          ).join('');
+        
+        // Restore saved value from storage if it exists and is valid
+        try {
+          const saved = localStorage.getItem('multiAgentChat');
+          if (saved) {
+            const data = JSON.parse(saved);
+            if (data.defaultAIModel && availableModels.includes(data.defaultAIModel)) {
+              dropdown.value = data.defaultAIModel;
+            }
+          }
+        } catch (error) {
+          console.log('Could not restore default AI model from storage:', error);
+        }
+      }
+    }
+    
+    function getSelectedAIModel() {
+      const dropdown = document.getElementById('defaultAIModel');
+      const selectedModel = dropdown && dropdown.value ? dropdown.value : null;
+      return selectedModel || (availableModels && availableModels.length > 0 ? availableModels[0] : 'default-model');
+    }
+    
+    function updateConnectionStatus(connected) {
+      const indicator = document.getElementById('statusIndicator');
+      const text = document.getElementById('statusText');
+      
+      apiAvailable = connected; // Update global API availability
+      
+      if (connected) {
+        indicator.textContent = '🟢';
+        text.textContent = 'Connected';
+        text.style.color = 'var(--success)';
+      } else {
+        indicator.textContent = '🔴';
+        text.textContent = 'Disconnected';
+        text.style.color = 'var(--danger)';
+        
+        // Show warning message if API becomes unavailable during conversation
+        if (isRunning) {
+          addMessage('System', '⚠️ LM Studio connection lost. AI features disabled. Using fallbacks.');
+        }
+      }
+    }
+    
+    async function checkConnection() {
+      try {
+        const res = await fetch(`${getApiEndpoint()}/models`, { 
+          method: 'HEAD',
+          headers: getApiHeaders()
+        });
+        updateConnectionStatus(res.ok);
+        return res.ok;
+      } catch (error) {
+        updateConnectionStatus(false);
+        return false;
+      }
+    }
+    
+    async function testConnection() {
+      const button = document.querySelector('button[onclick="testConnection()"]');
+      const originalText = button ? button.textContent : 'Test LM Studio Connection';
+      if (button) button.textContent = 'Testing...';
+      
+      try {
+        const endpoint = getApiEndpoint();
+        const res = await fetch(`${endpoint}/models`, {
+          headers: getApiHeaders()
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const modelCount = data.data ? data.data.length : 0;
+          alert(`✅ API Connected!\n\nFound ${modelCount} models available.\n\nServer: ${endpoint}`);
+          updateConnectionStatus(true);
+        } else {
+          alert(`❌ Connection Failed!\n\nStatus: ${res.status} ${res.statusText}\n\nPlease check:\n• API server is running\n• Endpoint URL is correct\n• API key is valid (if required)`);
+          updateConnectionStatus(false);
+        }
+      } catch (error) {
+        alert(`❌ Connection Error!\n\n${error.message}\n\nPlease check:\n• API server is running\n• Endpoint URL is correct\n• Network connectivity`);
+        updateConnectionStatus(false);
+      } finally {
+        if (button) button.textContent = originalText;
+      }
+    }
+    
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+    
+    function getAgentColor(agentId) {
+      if (!agentColors[agentId]) {
+        const usedColors = Object.values(agentColors);
+        const availableColors = colorPalette.filter(c => !usedColors.includes(c));
+        agentColors[agentId] = availableColors.length > 0 ? availableColors[0] : colorPalette[agents.length % colorPalette.length];
+      }
+      return agentColors[agentId];
+    }
+    
+    function getAgentInitials(name) {
+      if (!name || typeof name !== 'string') return 'AG';
+      return name.split(' ').map(word => word[0]).join('').toUpperCase().substr(0, 2) || 'AG';
+    }
+    
+    // Agent Management
+    function updateAgentCount() {
+      const countEl = document.getElementById('agentCount');
+      if (!countEl) return;
+      
+      const count = parseInt(countEl.value);
+      
+      // Ensure we have at least 2 agents
+      if (count < 2 || isNaN(count)) {
+        countEl.value = 2;
+        return;
+      }
+      
+      while (agents.length < count) {
+        addAgent();
+      }
+      while (agents.length > count) {
+        const removedAgent = agents.pop();
+        delete agentColors[removedAgent.id];
+      }
+      renderAgents();
+      saveToStorage();
+    }
+    
+    function addAgent() {
+      const id = generateId();
+      
+      // Ensure availableModels exists
+      if (!Array.isArray(availableModels) || availableModels.length === 0) {
+        availableModels = ['default-model'];
+      }
+      
+      agents.push({
+        id,
+        name: `Agent ${agents.length + 1}`,
+        persona: '',
+        model: availableModels[0],
+        temperature: 0.7,
+        maxTokens: 1000,
+        stopSequences: []
+      });
+      renderAgents();
+      saveToStorage();
+    }
+    
+    function removeAgent(id) {
+      agents = agents.filter(a => a.id !== id);
+      delete agentColors[id];
+      renderAgents();
+      saveToStorage();
+    }
+    
+    function toggleAgentCollapse(id) {
+      const card = document.querySelector(`[data-agent-id="${id}"]`);
+      if (card) {
+        card.classList.toggle('collapsed');
+      }
+    }
+    
+    function renderAgents() {
+      const container = document.getElementById('agentList');
+      if (!container) return;
+      
+      // Ensure availableModels is always an array
+      if (!Array.isArray(availableModels)) {
+        availableModels = ['default-model'];
+      }
+      
+      // Update starting agent dropdown
+      const startingAgentEl = document.getElementById('startingAgent');
+      if (startingAgentEl) {
+        const currentValue = startingAgentEl.value;
+        startingAgentEl.innerHTML = agents.map((agent, index) => 
+          `<option value="${index}" ${index.toString() === currentValue ? 'selected' : ''}>${agent.name}</option>`
+        ).join('');
+      }
+      
+      container.innerHTML = agents.map((agent, index) => `
+        <div class="agent-card" data-agent-id="${agent.id}">
+          <div class="agent-header" onclick="toggleAgentCollapse('${agent.id}')">
+            <div class="agent-avatar" style="background: ${getAgentColor(agent.id)}">
+              ${getAgentInitials(agent.name)}
+            </div>
+            <input 
+              class="agent-name-input" 
+              value="${agent.name}" 
+              onclick="event.stopPropagation()"
+              onchange="updateAgent('${agent.id}', 'name', this.value)"
+              placeholder="Agent name"
+            >
+            <div class="agent-actions" onclick="event.stopPropagation()">
+              <button class="icon-btn" onclick="enhanceAgent('${agent.id}')" title="AI enhance">✨</button>
+              ${agents.length > 2 ? `<button class="icon-btn" onclick="removeAgent('${agent.id}')" title="Delete">🗑️</button>` : ''}
+            </div>
+          </div>
+          <div class="agent-details">
+            <textarea 
+              placeholder="Describe this agent's personality and expertise..."
+              onchange="updateAgent('${agent.id}', 'persona', this.value)"
+              style="margin-bottom: 8px;"
+            >${agent.persona || ''}</textarea>
+            
+            <select onchange="updateAgent('${agent.id}', 'model', this.value)" style="margin-bottom: 8px;">
+              ${availableModels.map(m => `
+                <option value="${m}" ${agent.model === m ? 'selected' : ''}>${m}</option>
+              `).join('')}
+            </select>
+            
+            <div class="slider-group">
+              <div class="slider-label">
+                <span>Temperature</span>
+                <span id="temp-${agent.id}">${agent.temperature || 0.7}</span>
+              </div>
+              <input type="range" class="slider" min="0" max="1" step="0.1" value="${agent.temperature || 0.7}" 
+                onchange="updateAgent('${agent.id}', 'temperature', parseFloat(this.value))"
+                oninput="document.getElementById('temp-${agent.id}').textContent = this.value">
+            </div>
+            
+            <div style="margin-top: 8px;">
+              <label style="font-size: 12px;">Max Tokens</label>
+              <input type="number" value="${agent.maxTokens || 1000}" min="100" max="4000" 
+                onchange="updateAgent('${agent.id}', 'maxTokens', parseInt(this.value))"
+                style="margin-top: 4px;">
+            </div>
+            
+            <details style="margin-top: 8px;">
+              <summary style="font-size: 12px; cursor: pointer;">Stop Sequences</summary>
+              <div id="stopSeq-${agent.id}" style="margin-top: 8px;">
+                ${(agent.stopSequences || []).map((seq, i) => `
+                  <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+                    <input value="${seq}" onchange="updateStopSequence('${agent.id}', ${i}, this.value)" style="flex: 1;">
+                    <button class="icon-btn" onclick="removeStopSequence('${agent.id}', ${i})">✕</button>
+                  </div>
+                `).join('')}
+                <button onclick="addStopSequence('${agent.id}')" style="font-size: 12px; padding: 4px 8px;">+ Add</button>
+              </div>
+            </details>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function updateAgent(id, field, value) {
+      const agent = agents.find(a => a.id === id);
+      if (agent) {
+        agent[field] = value;
+        
+        // Ensure required fields have defaults
+        if (!agent.stopSequences) agent.stopSequences = [];
+        if (!agent.temperature) agent.temperature = 0.7;
+        if (!agent.maxTokens) agent.maxTokens = 1000;
+        if (!agent.model && availableModels.length > 0) agent.model = availableModels[0];
+        
+        saveToStorage();
+        
+        if (field === 'name') {
+          document.querySelectorAll(`[data-agent-id="${id}"] .agent-avatar`).forEach(avatar => {
+            avatar.textContent = getAgentInitials(value);
+          });
+        }
+      }
+    }
+    
+    function addStopSequence(agentId) {
+      const agent = agents.find(a => a.id === agentId);
+      if (agent) {
+        if (!Array.isArray(agent.stopSequences)) {
+          agent.stopSequences = [];
+        }
+        agent.stopSequences.push('');
+        renderAgents();
+        saveToStorage();
+      }
+    }
+    
+    function updateStopSequence(agentId, index, value) {
+      const agent = agents.find(a => a.id === agentId);
+      if (agent) {
+        agent.stopSequences[index] = value;
+        saveToStorage();
+      }
+    }
+    
+    function removeStopSequence(agentId, index) {
+      const agent = agents.find(a => a.id === agentId);
+      if (agent) {
+        agent.stopSequences.splice(index, 1);
+        renderAgents();
+        saveToStorage();
+      }
+    }
+    
+    // AI Features
+    async function enhanceAgent(agentId) {
+      if (!aiFeatures.enabled || !apiAvailable) {
+        if (!apiAvailable) {
+          alert('Cannot enhance agent: LM Studio is not connected. Please start LM Studio and try again.');
+        }
+        return;
+      }
+      
+      const agent = agents.find(a => a.id === agentId);
+      if (!agent) return;
+      
+      const button = document.querySelector(`[data-agent-id="${agentId}"] .icon-btn[title="AI enhance"]`);
+      if (button) button.textContent = '⏳';
+      
+      try {
+        // Ensure we have a model to use
+        const model = getSelectedAIModel();
+        
+        const response = await fetch(`${getApiEndpoint()}/chat/completions`, {
+          method: 'POST',
+          headers: getApiHeaders(),
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert at creating detailed, engaging character personas for conversational agents.'
+              },
+              {
+                role: 'user',
+                content: `Enhance this agent persona with more detail and personality:
+Name: ${agent.name}
+Current persona: ${agent.persona || 'None'}
+
+Provide an enhanced persona description that includes personality traits, expertise, speaking style, and unique characteristics. Keep it concise but vivid.`
+              }
+            ],
+            temperature: 0.8,
+            max_tokens: 200
+          })
+        });
+        
+        if (!response.ok) throw new Error('API request failed');
+        
+        const data = await response.json();
+        if (data && data.choices && Array.isArray(data.choices) && data.choices[0]) {
+          let enhancedPersona = null;
+          if (data.choices[0].message) {
+            const message = data.choices[0].message;
+            if (message.content && message.content.trim()) {
+              enhancedPersona = message.content;
+            } else if (message.reasoning && message.reasoning.trim()) {
+              enhancedPersona = message.reasoning;
+            }
+          } else if (data.choices[0].text) {
+            enhancedPersona = data.choices[0].text;
+          }
+          
+          if (enhancedPersona) {
+            updateAgent(agentId, 'persona', enhancedPersona);
+          } else {
+            console.warn('No content found in agent enhancement API response. Response structure:', JSON.stringify(data.choices[0], null, 2));
+          }
+        } else {
+          console.warn('Invalid API response for agent enhancement:', data);
+        }
+        renderAgents();
+      } catch (error) {
+        console.error('Enhancement failed:', error);
+        alert('Failed to enhance agent. Make sure LM Studio is running.');
+      }
+      
+      if (button) button.textContent = '✨';
+    }
+    
+    async function suggestNextAgent() {
+      if (!aiFeatures.enabled || !aiFeatures.autoSuggest || !apiAvailable) return null;
+      
+      const lastMessage = conversation[conversation.length - 1];
+      if (!lastMessage) return null;
+      
+      try {
+        const response = await fetch(`${getApiEndpoint()}/chat/completions`, {
+          method: 'POST',
+          headers: getApiHeaders(),
+          body: JSON.stringify({
+            model: getSelectedAIModel(),
+            messages: [
+              {
+                role: 'system',
+                content: `You are an agent selector for multi-agent conversations. Your job is to choose which agent should speak next based on the conversation context and flow.
+
+Available agents: ${agents.map(a => `${a.name} (${a.persona})`).join(', ')}
+
+RULES:
+1. DO NOT select the same agent that just spoke (${lastMessage.agent})
+2. Choose based on conversation flow and agent expertise
+3. Respond with ONLY the agent name, nothing else
+4. Do not include explanations or reasoning in your response`
+              },
+              {
+                role: 'user',
+                content: `Last speaker: ${lastMessage.agent}
+Last message: ${lastMessage.content}
+
+Which DIFFERENT agent should speak next? NOT ${lastMessage.agent}. Respond with only the agent name:`
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 50
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('API request failed for agent suggestion:', response.status, errorData);
+          updateConnectionStatus(false);
+          return null;
+        }
+        
+        const data = await response.json();
+        if (data && data.error) {
+          console.error('API returned error for agent suggestion:', data.error);
+          updateConnectionStatus(false);
+          return null;
+        }
+        
+        if (data && data.choices && Array.isArray(data.choices) && data.choices[0]) {
+          let suggestion = null;
+          
+          // Handle different response formats
+          if (data.choices[0].message) {
+            const message = data.choices[0].message;
+            if (message.content && message.content.trim()) {
+              // Standard completion format
+              suggestion = message.content.trim();
+            } else if (message.reasoning && message.reasoning.trim()) {
+              // LM Studio reasoning format - extract agent name from reasoning
+              const reasoning = message.reasoning.trim();
+              console.log('AI reasoning:', reasoning);
+              
+              // Try to extract agent name from reasoning text
+              // Look for patterns like "Agent should speak next" or mentioned agent names
+              // Exclude the agent that just spoke
+              const agentNames = agents.filter(a => a.name !== lastMessage.agent).map(a => a.name);
+              let foundAgent = null;
+              
+              for (const agentName of agentNames) {
+                const regex = new RegExp(`\\b${agentName}\\b`, 'i');
+                if (regex.test(reasoning)) {
+                  foundAgent = agentName;
+                  break;
+                }
+              }
+              
+              if (foundAgent) {
+                suggestion = foundAgent;
+                console.log(`Extracted agent "${foundAgent}" from reasoning`);
+              } else {
+                console.warn('Could not extract agent name from reasoning:', reasoning);
+                // Use the full reasoning as fallback
+                suggestion = reasoning;
+              }
+            }
+          } else if (data.choices[0].text) {
+            // Alternative format with text field
+            suggestion = data.choices[0].text.trim();
+          }
+          
+          if (suggestion) {
+            console.log(`AI suggested agent: "${suggestion}"`);
+            let suggestedAgent = agents.find(a => a.name.toLowerCase() === suggestion.toLowerCase());
+            
+            // Prevent suggesting the same agent that just spoke
+            if (suggestedAgent && suggestedAgent.name === lastMessage.agent) {
+              console.warn(`AI suggested the same agent (${suggestedAgent.name}) that just spoke. Selecting a different one.`);
+              const otherAgents = agents.filter(a => a.name !== lastMessage.agent);
+              if (otherAgents.length > 0) {
+                suggestedAgent = otherAgents[Math.floor(Math.random() * otherAgents.length)];
+                console.log(`✅ Corrected: Selected different agent: ${suggestedAgent.name}`);
+              }
+            }
+            
+            if (!suggestedAgent) {
+              console.warn(`Agent suggestion "${suggestion}" not found in available agents.`);
+              console.log('Available agents:', agents.map(a => a.name));
+              console.log('Full API response for debugging:', JSON.stringify(data, null, 2));
+            }
+            return suggestedAgent;
+          } else {
+            console.warn('No content found in API response. Response structure:', JSON.stringify(data.choices[0], null, 2));
+            return null;
+          }
+        } else {
+          console.warn('Invalid API response format for agent suggestion. Expected choices array but got:', data);
+          return null;
+        }
+      } catch (error) {
+        console.error('Auto-suggest failed:', error);
+        return null;
+      }
+    }
+    
+    async function summarizeConversation() {
+      if (!aiFeatures.enabled || !aiFeatures.summarization || !apiAvailable || conversation.length < 3) return '';
+      
+      try {
+        const response = await fetch(`${getApiEndpoint()}/chat/completions`, {
+          method: 'POST',
+          headers: getApiHeaders(),
+          body: JSON.stringify({
+            model: availableModels[0],
+            messages: [
+              {
+                role: 'system',
+                content: 'Summarize the key points of this multi-agent conversation in 2-3 sentences.'
+              },
+              {
+                role: 'user',
+                content: conversation.map(m => `${m.agent}: ${m.content}`).join('\n\n')
+              }
+            ],
+            temperature: 0.5,
+            max_tokens: 150
+          })
+        });
+        
+        const data = await response.json();
+        if (data && data.choices && Array.isArray(data.choices) && data.choices[0]) {
+          if (data.choices[0].message) {
+            const message = data.choices[0].message;
+            if (message.content && message.content.trim()) {
+              return message.content;
+            } else if (message.reasoning && message.reasoning.trim()) {
+              return message.reasoning;
+            }
+          } else if (data.choices[0].text) {
+            return data.choices[0].text;
+          }
+          
+          console.warn('No content found in summary API response. Response structure:', JSON.stringify(data.choices[0], null, 2));
+          return '';
+        } else {
+          console.warn('Invalid API response for conversation summary:', data);
+          return '';
+        }
+      } catch (error) {
+        console.error('Summarization failed:', error);
+        return '';
+      }
+    }
+    
+    async function extractTopics() {
+      if (!aiFeatures.enabled || !aiFeatures.topicExtraction || !apiAvailable || conversation.length < 3) return [];
+      
+      try {
+        const response = await fetch(`${getApiEndpoint()}/chat/completions`, {
+          method: 'POST',
+          headers: getApiHeaders(),
+          body: JSON.stringify({
+            model: availableModels[0],
+            messages: [
+              {
+                role: 'system',
+                content: 'Extract 3-5 main topics from this conversation. Respond with a comma-separated list.'
+              },
+              {
+                role: 'user',
+                content: conversation.map(m => m.content).join(' ')
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 100
+          })
+        });
+        
+        const data = await response.json();
+        if (data && data.choices && Array.isArray(data.choices) && data.choices[0]) {
+          let content = null;
+          if (data.choices[0].message) {
+            const message = data.choices[0].message;
+            if (message.content && message.content.trim()) {
+              content = message.content;
+            } else if (message.reasoning && message.reasoning.trim()) {
+              content = message.reasoning;
+            }
+          } else if (data.choices[0].text) {
+            content = data.choices[0].text;
+          }
+          
+          if (content) {
+            return content.split(',').map(t => t.trim());
+          } else {
+            console.warn('No content found in topic extraction API response. Response structure:', JSON.stringify(data.choices[0], null, 2));
+            return [];
+          }
+        } else {
+          console.warn('Invalid API response for topic extraction:', data);
+          return [];
+        }
+      } catch (error) {
+        console.error('Topic extraction failed:', error);
+        return [];
+      }
+    }
+    
+    // UI Functions
+    function switchTab(tab) {
+      try {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.sidebar-content').forEach(c => c.style.display = 'none');
+        
+        const activeTab = document.querySelector(`.tab:nth-child(${tab === 'agents' ? 1 : tab === 'templates' ? 2 : 3})`);
+        const tabContent = document.getElementById(`${tab}Tab`);
+        
+        if (activeTab) activeTab.classList.add('active');
+        if (tabContent) tabContent.style.display = 'block';
+      } catch (error) {
+        console.error('Error switching tabs:', error);
+      }
+    }
+    
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    }
+    
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar) {
+        sidebar.classList.toggle('show');
+      }
+    }
+    
+    function toggleAIFeatures() {
+      aiFeatures.enabled = document.getElementById('aiEnabled').checked;
+      document.getElementById('aiFeatures').style.opacity = aiFeatures.enabled ? '1' : '0.5';
+      saveSettings();
+    }
+    
+    function updateSliderValue(sliderId, valueId) {
+      document.getElementById(valueId).textContent = document.getElementById(sliderId).value;
+    }
+    
+    function updateUI() {
+      const startBtn = document.getElementById('startBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const autoMode = document.getElementById('autoMode').checked;
+      
+      if (isRunning) {
+        startBtn.style.display = 'none';
+        pauseBtn.style.display = autoMode ? 'inline-block' : 'none';
+        stopBtn.style.display = 'inline-block';
+        nextBtn.style.display = !autoMode || isPaused ? 'inline-block' : 'none';
+      } else {
+        startBtn.style.display = 'inline-block';
+        pauseBtn.style.display = 'none';
+        stopBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+      }
+    }
+    
+    // Templates
+    function loadTemplates() {
+      const saved = localStorage.getItem('customTemplates');
+      templates = saved ? JSON.parse(saved) : [...defaultTemplates];
+      updateRecentTemplates();
+    }
+    
+    function saveTemplates() {
+      const customTemplates = templates.filter(t => !defaultTemplates.find(d => d.id === t.id));
+      localStorage.setItem('customTemplates', JSON.stringify(customTemplates));
+    }
+    
+    function updateRecentTemplates() {
+      const container = document.getElementById('recentTemplates');
+      const recent = templates.slice(-3).reverse();
+      
+      container.innerHTML = recent.map(t => `
+        <div class="template-card" style="padding: 12px; margin-bottom: 8px;">
+          <h5 style="margin: 0 0 4px 0; font-size: 14px;">${t.name}</h5>
+          <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">${t.agents.length} agents</p>
+          <div class="template-actions">
+            <button onclick="applyTemplate('${t.id}')" style="font-size: 12px; padding: 4px 12px;">Use</button>
+            ${!defaultTemplates.find(d => d.id === t.id) ? 
+              `<button onclick="deleteTemplate('${t.id}')" style="font-size: 12px; padding: 4px 12px; background: var(--danger);">Delete</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function showTemplateLibrary() {
+      const modal = document.getElementById('templateModal');
+      const grid = document.getElementById('templateGrid');
+      
+      grid.innerHTML = templates.map(t => `
+        <div class="template-card">
+          <h4 style="margin: 0 0 8px 0;">${t.name}</h4>
+          <p style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-secondary);">
+            ${t.description || `${t.agents.length} agents`}
+          </p>
+          <div class="template-actions">
+            <button onclick="applyTemplate('${t.id}')" style="width: 100%;">Apply Template</button>
+          </div>
+        </div>
+      `).join('');
+      
+      modal.style.display = 'block';
+    }
+    
+    function applyTemplate(templateId) {
+      const template = templates.find(t => t.id === templateId);
+      if (!template) return;
+      
+      // Ensure availableModels exists
+      if (!Array.isArray(availableModels) || availableModels.length === 0) {
+        availableModels = ['default-model'];
+      }
+      
+      agents = template.agents.map(a => ({
+        ...a,
+        id: generateId(),
+        model: a.model || availableModels[0],
+        temperature: a.temperature || 0.7,
+        maxTokens: a.maxTokens || 1000,
+        stopSequences: a.stopSequences || []
+      }));
+      
+      const promptEl = document.getElementById('initialPrompt');
+      if (promptEl) promptEl.value = template.prompt || '';
+      
+      const countEl = document.getElementById('agentCount');
+      if (countEl) countEl.value = agents.length;
+      
+      renderAgents();
+      saveToStorage();
+      closeModal('templateModal');
+    }
+    
+    function createTemplate() {
+      const name = prompt('Template name:');
+      if (!name) return;
+      
+      const description = prompt('Template description:');
+      const template = {
+        id: generateId(),
+        name,
+        description,
+        agents: agents.map(a => ({
+          name: a.name,
+          persona: a.persona,
+          temperature: a.temperature,
+          model: a.model,
+          maxTokens: a.maxTokens,
+          stopSequences: a.stopSequences
+        })),
+        prompt: document.getElementById('initialPrompt').value
+      };
+      
+      templates.push(template);
+      saveTemplates();
+      updateRecentTemplates();
+      alert('Template created!');
+    }
+    
+    function deleteTemplate(id) {
+      if (confirm('Delete this template?')) {
+        templates = templates.filter(t => t.id !== id);
+        saveTemplates();
+        updateRecentTemplates();
+      }
+    }
+    
+    function showQuickAgents() {
+      const modal = document.getElementById('quickAgentsModal');
+      const grid = document.getElementById('quickAgentsGrid');
+      
+      grid.innerHTML = quickAgentTemplates.map(agent => `
+        <div class="template-card">
+          <h4 style="margin: 0 0 8px 0;">${agent.name}</h4>
+          <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+            ${agent.persona}
+          </p>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+            Temperature: ${agent.temperature}
+          </div>
+          <button onclick="addQuickAgent('${agent.name}')" style="width: 100%;">Add ${agent.name}</button>
+        </div>
+      `).join('');
+      
+      modal.style.display = 'block';
+    }
+    
+    function addQuickAgent(templateName) {
+      const template = quickAgentTemplates.find(t => t.name === templateName);
+      if (!template) return;
+      
+      // Ensure availableModels exists
+      if (!Array.isArray(availableModels) || availableModels.length === 0) {
+        availableModels = ['default-model'];
+      }
+      
+      const id = generateId();
+      agents.push({
+        id,
+        name: template.name,
+        persona: template.persona,
+        model: availableModels[0],
+        temperature: template.temperature,
+        maxTokens: 1000,
+        stopSequences: []
+      });
+      
+      renderAgents();
+      saveToStorage();
+      closeModal('quickAgentsModal');
+      
+      // Update agent count selector
+      const countEl = document.getElementById('agentCount');
+      if (countEl) countEl.value = agents.length;
+    }
+    
+    function importTemplate() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const text = await file.text();
+          const template = JSON.parse(text);
+          template.id = generateId();
+          templates.push(template);
+          saveTemplates();
+          updateRecentTemplates();
+          alert('Template imported!');
+        }
+      };
+      input.click();
+    }
+    
+    // Messages
+    function addMessage(agentName, content, options = {}) {
+      const container = document.getElementById('chatContainer');
+      const agent = agents.find(a => a.name === agentName);
+      const color = agent ? getAgentColor(agent.id) : '#6b7280';
+      const messageId = generateId();
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message' + (options.userInserted ? ' user-inserted' : '');
+      messageDiv.id = `msg-${messageId}`;
+      
+      if (options.isThinking) {
+        messageDiv.innerHTML = `
+          <div class="message-avatar" style="background: ${color}">
+            ${getAgentInitials(agentName)}
+          </div>
+          <div class="message-content">
+            <div class="message-header" style="color: ${color}">
+              ${agentName}
+              <div class="message-actions">
+                <button class="icon-btn" onclick="editMessage('${messageId}')" title="Edit">✏️</button>
+                <button class="icon-btn" onclick="regenerateMessage('${messageId}')" title="Regenerate">🔄</button>
+                <button class="icon-btn" onclick="branchFromMessage('${messageId}')" title="Branch">🌿</button>
+                <button class="icon-btn" onclick="copyMessage('${messageId}')" title="Copy">📋</button>
+              </div>
+            </div>
+            <div class="typing-indicator">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+        `;
+      } else if (options.isStreaming) {
+        messageDiv.innerHTML = `
+          <div class="message-avatar" style="background: ${color}">
+            ${getAgentInitials(agentName)}
+          </div>
+          <div class="message-content">
+            <div class="message-header" style="color: ${color}">
+              ${agentName}
+              ${options.branch ? `<span class="branch-indicator">🌿 ${options.branch}</span>` : ''}
+              <div class="message-actions">
+                <button class="icon-btn" onclick="editMessage('${messageId}')" title="Edit">✏️</button>
+                <button class="icon-btn" onclick="regenerateMessage('${messageId}')" title="Regenerate">🔄</button>
+                <button class="icon-btn" onclick="branchFromMessage('${messageId}')" title="Branch">🌿</button>
+                <button class="icon-btn" onclick="copyMessage('${messageId}')" title="Copy">📋</button>
+              </div>
+            </div>
+            <div class="message-text" id="text-${messageId}"></div>
+          </div>
+        `;
+      } else {
+        const nextAgentMatch = content.match(/\[To:\s*(.+?)\]/i);
+        const cleanContent = content.replace(/\[To:.*?\]/i, '').trim();
+        const nextAgentName = nextAgentMatch ? nextAgentMatch[1].trim() : null;
+        
+        // Convert markdown to HTML
+        const htmlContent = marked.parse(cleanContent);
+        
+        messageDiv.innerHTML = `
+          <div class="message-avatar" style="background: ${color}">
+            ${getAgentInitials(agentName)}
+          </div>
+          <div class="message-content">
+            <div class="message-header" style="color: ${color}">
+              ${agentName}
+              ${options.branch ? `<span class="branch-indicator">🌿 ${options.branch}</span>` : ''}
+              <div class="message-actions">
+                <button class="icon-btn" onclick="editMessage('${messageId}')" title="Edit">✏️</button>
+                <button class="icon-btn" onclick="regenerateMessage('${messageId}')" title="Regenerate">🔄</button>
+                <button class="icon-btn" onclick="branchFromMessage('${messageId}')" title="Branch">🌿</button>
+                <button class="icon-btn" onclick="copyMessage('${messageId}')" title="Copy">📋</button>
+              </div>
+            </div>
+            <div class="message-text" id="text-${messageId}">${htmlContent}</div>
+            ${nextAgentName ? `<div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">→ ${nextAgentName}</div>` : ''}
+          </div>
+        `;
+        
+        conversation.push({ 
+          id: messageId,
+          agent: agentName, 
+          content: cleanContent, 
+          nextAgent: nextAgentName,
+          branch: options.branch || currentBranch,
+          userInserted: options.userInserted
+        });
+        
+        // Highlight code blocks
+        setTimeout(() => {
+          document.querySelectorAll(`#text-${messageId} pre code`).forEach(block => {
+            Prism.highlightElement(block);
+          });
+        }, 0);
+      }
+      
+      container.appendChild(messageDiv);
+      container.scrollTop = container.scrollHeight;
+      
+      return messageDiv;
+    }
+    
+    function editMessage(messageId) {
+      const msg = conversation.find(m => m.id === messageId);
+      if (!msg) return;
+      
+      const textDiv = document.getElementById(`text-${messageId}`);
+      const currentText = msg.content;
+      
+      textDiv.innerHTML = `
+        <textarea id="edit-${messageId}" style="width: 100%; min-height: 100px;">${currentText}</textarea>
+        <div style="margin-top: 8px; display: flex; gap: 8px;">
+          <button onclick="saveEdit('${messageId}')" style="font-size: 12px; padding: 4px 12px;">Save</button>
+          <button onclick="cancelEdit('${messageId}')" style="font-size: 12px; padding: 4px 12px; background: var(--text-secondary);">Cancel</button>
+        </div>
+      `;
+      
+      document.getElementById(`edit-${messageId}`).focus();
+    }
+    
+    function saveEdit(messageId) {
+      const msg = conversation.find(m => m.id === messageId);
+      if (!msg) return;
+      
+      const newContent = document.getElementById(`edit-${messageId}`).value;
+      msg.content = newContent;
+      
+      const htmlContent = marked.parse(newContent);
+      document.getElementById(`text-${messageId}`).innerHTML = htmlContent;
+      
+      saveToStorage();
+    }
+    
+    function cancelEdit(messageId) {
+      const msg = conversation.find(m => m.id === messageId);
+      if (!msg) return;
+      
+      const htmlContent = marked.parse(msg.content);
+      document.getElementById(`text-${messageId}`).innerHTML = htmlContent;
+    }
+    
+    async function regenerateMessage(messageId) {
+      const msgIndex = conversation.findIndex(m => m.id === messageId);
+      if (msgIndex === -1) return;
+      
+      const msg = conversation[msgIndex];
+      const agent = agents.find(a => a.name === msg.agent);
+      if (!agent) return;
+      
+      // Get context up to this message
+      const context = conversation.slice(0, msgIndex);
+      const history = buildMessageHistory(agent, context);
+      
+      // Show thinking
+      const messageDiv = document.getElementById(`msg-${messageId}`);
+      const originalContent = messageDiv.innerHTML;
+      
+      messageDiv.querySelector('.message-content').innerHTML = `
+        <div class="message-header" style="color: ${getAgentColor(agent.id)}">${agent.name}</div>
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      `;
+      
+      try {
+        const response = await streamCompletion(agent, history);
+        
+        // Update message
+        const nextAgentMatch = response.match(/\[To:\s*(.+?)\]/i);
+        const cleanContent = response.replace(/\[To:.*?\]/i, '').trim();
+        const regeneratedNextAgent = nextAgentMatch ? nextAgentMatch[1].trim() : null;
+        
+        msg.content = cleanContent;
+        msg.nextAgent = regeneratedNextAgent;
+        
+        const htmlContent = marked.parse(cleanContent);
+        
+        messageDiv.innerHTML = originalContent;
+        document.getElementById(`text-${messageId}`).innerHTML = htmlContent;
+        
+        // Update subsequent messages if needed
+        if (msgIndex < conversation.length - 1) {
+          updateMessageChain(msgIndex);
+        }
+        
+        saveToStorage();
+      } catch (error) {
+        console.error('Regeneration failed:', error);
+        messageDiv.innerHTML = originalContent;
+      }
+    }
+    
+    function branchFromMessage(messageId) {
+      const branchName = prompt('Branch name:');
+      if (!branchName) return;
+      
+      const msgIndex = conversation.findIndex(m => m.id === messageId);
+      if (msgIndex === -1) return;
+      
+      // Create new branch with messages up to this point
+      branches.push({
+        name: branchName,
+        parent: currentBranch,
+        startIndex: msgIndex,
+        messages: conversation.slice(0, msgIndex + 1).map(m => ({...m}))
+      });
+      
+      currentBranch = branchName;
+      alert(`Created branch "${branchName}"`);
+      saveToStorage();
+    }
+    
+    function copyMessage(messageId) {
+      const msg = conversation.find(m => m.id === messageId);
+      if (!msg) return;
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(msg.content).catch(err => {
+          console.error('Failed to copy to clipboard:', err);
+          // Fallback for older browsers
+          const textArea = document.createElement('textarea');
+          textArea.value = msg.content;
+          document.body.appendChild(textArea);
+          textArea.select();
+          try {
+            document.execCommand('copy');
+          } catch (fallbackErr) {
+            console.error('Fallback copy failed:', fallbackErr);
+          }
+          document.body.removeChild(textArea);
+        });
+      }
+      
+      // Show feedback
+      const btn = document.querySelector(`#msg-${messageId} .icon-btn[title="Copy"]`);
+      if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(() => {
+          if (btn) btn.textContent = originalText;
+        }, 1000);
+      }
+    }
+    
+    // Search
+    function searchMessages() {
+      const searchBar = document.getElementById('searchBar');
+      const searchInput = document.getElementById('searchInput');
+      if (searchBar) searchBar.style.display = 'flex';
+      if (searchInput) searchInput.focus();
+    }
+    
+    function closeSearch() {
+      const searchBar = document.getElementById('searchBar');
+      const searchInput = document.getElementById('searchInput');
+      if (searchBar) searchBar.style.display = 'none';
+      if (searchInput) searchInput.value = '';
+      
+      // Clear highlights
+      document.querySelectorAll('.message').forEach(msg => {
+        msg.style.opacity = '1';
+      });
+    }
+    
+    function performSearch(event) {
+      if (event.key === 'Escape') {
+        closeSearch();
+        return;
+      }
+      
+      const query = event.target.value.toLowerCase();
+      if (!query) {
+        document.querySelectorAll('.message').forEach(msg => {
+          msg.style.opacity = '1';
+        });
+        return;
+      }
+      
+      document.querySelectorAll('.message').forEach(msg => {
+        const text = msg.textContent.toLowerCase();
+        msg.style.opacity = text.includes(query) ? '1' : '0.3';
+      });
+    }
+    
+    // Insert Message
+    function insertMessage() {
+      const modal = document.getElementById('insertModal');
+      const select = document.getElementById('insertAfter');
+      const agentSelect = document.getElementById('insertAgent');
+      
+      // Populate message options
+      select.innerHTML = '<option value="0">Beginning of conversation</option>' +
+        conversation.map((msg, i) => 
+          `<option value="${i + 1}">${i + 1}. ${msg.agent}: ${msg.content.substring(0, 50)}...</option>`
+        ).join('');
+      
+      // Populate agent options
+      agentSelect.innerHTML = agents.map(a => 
+        `<option value="${a.name}">${a.name}</option>`
+      ).join('');
+      
+      modal.style.display = 'block';
+    }
+    
+    function confirmInsert() {
+      const position = parseInt(document.getElementById('insertAfter').value);
+      const content = document.getElementById('insertContent').value;
+      const agentName = document.getElementById('insertAgent').value;
+      
+      if (!content.trim()) return;
+      
+      // Insert into conversation array
+      const newMessage = {
+        id: generateId(),
+        agent: agentName,
+        content: content,
+        userInserted: true,
+        branch: currentBranch
+      };
+      
+      conversation.splice(position, 0, newMessage);
+      
+      // Re-render all messages
+      renderConversation();
+      
+      document.getElementById('insertContent').value = '';
+      closeModal('insertModal');
+      saveToStorage();
+    }
+    
+    function renderConversation() {
+      const container = document.getElementById('chatContainer');
+      container.innerHTML = '';
+      
+      conversation.forEach(msg => {
+        addMessage(msg.agent, msg.content, {
+          userInserted: msg.userInserted,
+          branch: msg.branch
+        });
+      });
+    }
+    
+    // Analytics
+    async function showAnalytics() {
+      const modal = document.getElementById('analyticsModal');
+      
+      // Generate word cloud
+      generateWordCloud();
+      
+      // Sentiment analysis
+      await analyzeSentiment();
+      
+      // Flow diagram
+      generateFlowDiagram();
+      
+      modal.style.display = 'block';
+    }
+    
+    function generateWordCloud() {
+      const text = conversation.map(m => m.content).join(' ');
+      const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+      const frequency = {};
+      
+      words.forEach(word => {
+        if (word.length > 3) {
+          frequency[word] = (frequency[word] || 0) + 1;
+        }
+      });
+      
+      const sortedWords = Object.entries(frequency)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 30);
+      
+      const maxFreq = sortedWords[0]?.[1] || 1;
+      
+      document.getElementById('wordCloud').innerHTML = sortedWords.map(([word, freq]) => {
+        const size = 12 + (freq / maxFreq) * 24;
+        const opacity = 0.5 + (freq / maxFreq) * 0.5;
+        return `<span style="font-size: ${size}px; opacity: ${opacity}; color: ${colorPalette[Math.floor(Math.random() * colorPalette.length)]}">${word}</span>`;
+      }).join(' ');
+    }
+    
+    async function analyzeSentiment() {
+      if (!aiFeatures.enabled || !apiAvailable || conversation.length === 0) {
+        document.getElementById('sentimentIndicator').style.left = '50%';
+        document.getElementById('sentimentText').textContent = 'Neutral';
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${getApiEndpoint()}/chat/completions`, {
+          method: 'POST',
+          headers: getApiHeaders(),
+          body: JSON.stringify({
+            model: availableModels[0],
+            messages: [
+              {
+                role: 'system',
+                content: 'Analyze the sentiment of this conversation. Respond with a number from -1 (very negative) to 1 (very positive).'
+              },
+              {
+                role: 'user',
+                content: conversation.map(m => m.content).join('\n')
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 10
+          })
+        });
+        
+        const data = await response.json();
+        let sentiment = 0;
+        if (data && data.choices && Array.isArray(data.choices) && data.choices[0]) {
+          let content = null;
+          if (data.choices[0].message) {
+            const message = data.choices[0].message;
+            if (message.content && message.content.trim()) {
+              content = message.content;
+            } else if (message.reasoning && message.reasoning.trim()) {
+              content = message.reasoning;
+            }
+          } else if (data.choices[0].text) {
+            content = data.choices[0].text;
+          }
+          
+          if (content) {
+            sentiment = parseFloat(content) || 0;
+          } else {
+            console.warn('No content found in sentiment API response. Response structure:', JSON.stringify(data.choices[0], null, 2));
+          }
+        } else {
+          console.warn('Invalid API response for sentiment analysis:', data);
+        }
+        
+        const percentage = (sentiment + 1) * 50;
+        document.getElementById('sentimentIndicator').style.left = `${percentage}%`;
+        
+        let text = 'Neutral';
+        if (sentiment < -0.5) text = 'Very Negative';
+        else if (sentiment < -0.2) text = 'Negative';
+        else if (sentiment > 0.5) text = 'Very Positive';
+        else if (sentiment > 0.2) text = 'Positive';
+        
+        document.getElementById('sentimentText').textContent = text;
+      } catch (error) {
+        console.error('Sentiment analysis failed:', error);
+      }
+    }
+    
+    function generateFlowDiagram() {
+      const container = document.getElementById('flowDiagram');
+      const nodes = {};
+      const links = [];
+      
+      // Count interactions
+      conversation.forEach((msg, i) => {
+        nodes[msg.agent] = (nodes[msg.agent] || 0) + 1;
+        
+        if (i > 0) {
+          const prev = conversation[i - 1];
+          const key = `${prev.agent}->${msg.agent}`;
+          links.push(key);
+        }
+      });
+      
+      // Simple text representation
+      let html = '<div style="font-family: monospace; white-space: pre;">';
+      
+      // Node sizes
+      html += 'Agent Activity:\n';
+      Object.entries(nodes).forEach(([agent, count]) => {
+        const bar = '█'.repeat(Math.ceil(count * 2));
+        html += `${agent.padEnd(15)} ${bar} (${count})\n`;
+      });
+      
+      html += '\nConversation Flow:\n';
+      const flowCounts = {};
+      links.forEach(link => {
+        flowCounts[link] = (flowCounts[link] || 0) + 1;
+      });
+      
+      Object.entries(flowCounts).forEach(([flow, count]) => {
+        html += `${flow.padEnd(25)} × ${count}\n`;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+    
+    // Conversation Management
+    function buildSystemPrompt(agent) {
+      const systemPromptEl = document.getElementById('systemPrompt');
+      const defaultTemplate = `You are {{agentName}}. {{persona}}
+
+There are {{agentCount}} agents in this conversation:
+{{agentDescriptions}}
+
+Each agent takes turns speaking. At the end of your message, you must decide who to pass the conversation to by ending with:
+[To: AgentName]
+
+❗ You may not choose yourself. Choose the next speaker based on relevance or natural conversation flow.`;
+      
+      const template = systemPromptEl ? systemPromptEl.value : defaultTemplate;
+      const agentList = agents.map(a => `- ${a.name}: ${a.persona || 'No description'}`).join('\n');
+      
+      return template
+        .replace('{{agentName}}', agent.name)
+        .replace('{{persona}}', agent.persona || 'No specific persona')
+        .replace('{{agentCount}}', agents.length)
+        .replace('{{agentDescriptions}}', agentList);
+    }
+    
+    function buildMessageHistory(agent, contextMessages = []) {
+      const systemPrompt = buildSystemPrompt(agent);
+      const history = [{ role: 'system', content: systemPrompt }];
+      
+      // Get context limits from settings
+      const maxContextEl = document.getElementById('maxContextMessages');
+      const smartTrimmingEl = document.getElementById('smartContextTrimming');
+      const maxContext = maxContextEl ? parseInt(maxContextEl.value) : 20;
+      const smartTrimming = smartTrimmingEl ? smartTrimmingEl.checked : true;
+      
+      let messagesToUse = contextMessages;
+      
+      // Apply context limits
+      if (contextMessages.length > maxContext) {
+        if (smartTrimming) {
+          // Keep first few messages (initial context) and most recent messages
+          const keepFirst = Math.min(3, Math.floor(maxContext * 0.3));
+          const keepRecent = maxContext - keepFirst;
+          
+          messagesToUse = [
+            ...contextMessages.slice(0, keepFirst),
+            ...contextMessages.slice(-keepRecent)
+          ];
+        } else {
+          // Just keep the most recent messages
+          messagesToUse = contextMessages.slice(-maxContext);
+        }
+      }
+      
+      // Add context messages
+      messagesToUse.forEach((msg, i) => {
+        if (msg.agent === agent.name) {
+          history.push({ role: 'assistant', content: msg.content });
+        } else {
+          history.push({ role: 'user', content: `${msg.agent}: ${msg.content}` });
+        }
+      });
+      
+      return history;
+    }
+    
+    async function streamCompletion(agent, messages) {
+      try {
+        const response = await fetch(`${getApiEndpoint()}/chat/completions`, {
+          method: 'POST',
+          headers: getApiHeaders(),
+          body: JSON.stringify({
+            model: agent.model || availableModels[0] || 'default-model',
+            messages,
+            stream: true,
+            temperature: agent.temperature || 0.7,
+            max_tokens: agent.maxTokens || 1000,
+            stop: agent.stopSequences && agent.stopSequences.length > 0 ? agent.stopSequences : undefined
+          })
+        });
+        
+        if (!response.ok) {
+          let errorMsg = `HTTP ${response.status}`;
+          try {
+            const errorData = await response.text();
+            if (errorData) errorMsg += `: ${errorData}`;
+          } catch (e) {
+            // Ignore parse errors for error messages
+          }
+          throw new Error(errorMsg);
+        }
+      
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let finalText = '';
+        
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(l => l.trim().startsWith('data: '));
+            
+            for (let line of lines) {
+              line = line.replace('data: ', '').trim();
+              if (line === '[DONE]') return finalText;
+              
+              try {
+                const json = JSON.parse(line);
+                if (json && json.choices && Array.isArray(json.choices) && json.choices[0]) {
+                  const content = json.choices[0].delta?.content;
+                  if (content && typeof content === 'string') {
+                    finalText += content;
+                  }
+                }
+              } catch (e) {
+                // Skip invalid JSON lines
+                console.debug('Skipping invalid JSON line:', line);
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        
+        return finalText;
+      } catch (error) {
+        console.error('Stream completion error:', error);
+        throw new Error(`Failed to get response from ${agent.name}: ${error.message}`);
+      }
+    }
+    
+    async function streamCompletionWithUI(agent, messages, messageElement) {
+      try {
+        const response = await fetch(`${getApiEndpoint()}/chat/completions`, {
+          method: 'POST',
+          headers: getApiHeaders(),
+          body: JSON.stringify({
+            model: agent.model || availableModels[0] || 'default-model',
+            messages,
+            stream: true,
+            temperature: agent.temperature || 0.7,
+            max_tokens: agent.maxTokens || 1000,
+            stop: agent.stopSequences && agent.stopSequences.length > 0 ? agent.stopSequences : undefined
+          })
+        });
+        
+        if (!response.ok) {
+          let errorMsg = `HTTP ${response.status}`;
+          try {
+            const errorData = await response.text();
+            if (errorData) errorMsg += `: ${errorData}`;
+          } catch (e) {
+            // Ignore parse errors for error messages
+          }
+          throw new Error(errorMsg);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let finalText = '';
+        let contentDiv = messageElement.querySelector('.message-text');
+        
+        // Remove thinking indicator and set up streaming
+        const thinkingDiv = messageElement.querySelector('.typing-indicator');
+        if (thinkingDiv) {
+          thinkingDiv.remove();
+        }
+        
+        if (!contentDiv) {
+          // Create content div if it doesn't exist
+          const messageContent = messageElement.querySelector('.message-content');
+          contentDiv = document.createElement('div');
+          contentDiv.className = 'message-text';
+          messageContent.appendChild(contentDiv);
+        }
+        
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(l => l.trim().startsWith('data: '));
+            
+            for (let line of lines) {
+              line = line.replace('data: ', '').trim();
+              if (line === '[DONE]') break;
+              
+              try {
+                const json = JSON.parse(line);
+                if (json && json.choices && Array.isArray(json.choices) && json.choices[0]) {
+                  const content = json.choices[0].delta?.content;
+                  if (content && typeof content === 'string') {
+                    finalText += content;
+                    // Update UI in real-time
+                    const htmlContent = marked.parse(finalText);
+                    contentDiv.innerHTML = htmlContent;
+                  
+                    // Scroll to bottom
+                    const container = document.getElementById('chatContainer');
+                    if (container) container.scrollTop = container.scrollHeight;
+                    
+                    // Highlight code blocks
+                    contentDiv.querySelectorAll('pre code').forEach(block => {
+                      Prism.highlightElement(block);
+                    });
+                  }
+                }
+              } catch (e) {
+                // Skip invalid JSON lines
+                console.debug('Skipping invalid JSON line:', line);
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        
+        return finalText;
+      } catch (error) {
+        console.error('Stream completion error:', error);
+        throw new Error(`Failed to get response from ${agent.name}: ${error.message}`);
+      }
+    }
+    
+    async function startConversation() {
+      if (agents.length < 2) {
+        alert('You need at least 2 agents to start a conversation');
+        return;
+      }
+      
+      const promptEl = document.getElementById('initialPrompt');
+      const initialPrompt = promptEl ? promptEl.value.trim() : '';
+      
+      if (!initialPrompt) {
+        // AI prompt enhancement
+        if (aiFeatures.enabled) {
+          await enhancePrompt();
+          return;
+        } else {
+          alert('Please enter an initial prompt');
+          return;
+        }
+      }
+      
+      clearChat();
+      messageHistory = {}; // Clear any previous conversation history
+      isRunning = true;
+      isPaused = false;
+      currentTurn = 0;
+      currentBranch = 'main';
+      branches = [];
+      
+      updateUI();
+      
+      // Show API status warning if needed
+      if (!apiAvailable && aiFeatures.enabled) {
+        addMessage('System', '⚠️ LM Studio is not connected. AI features disabled. Conversations will use random agent selection.');
+      }
+      
+      // Display initial prompt in chat
+      addMessage('User', initialPrompt, { userInserted: true });
+      
+      // Get selected starting agent
+      const startingAgentEl = document.getElementById('startingAgent');
+      const startingIndex = startingAgentEl ? parseInt(startingAgentEl.value) : 0;
+      const firstAgent = agents[startingIndex] || agents[0];
+      const history = buildMessageHistory(firstAgent);
+      history.push({ role: 'user', content: initialPrompt });
+      
+      messageHistory[firstAgent.id] = history;
+      
+      const autoModeEl = document.getElementById('autoMode');
+      if (autoModeEl && autoModeEl.checked) {
+        runAutoMode();
+      }
+    }
+    
+    async function enhancePrompt() {
+      if (!apiAvailable) {
+        alert('Cannot enhance prompt: LM Studio is not connected. Please start LM Studio and try again.');
+        return;
+      }
+      
+      const btn = document.getElementById('startBtn');
+      if (btn) btn.textContent = '⏳ Enhancing...';
+      
+      try {
+        const model = getSelectedAIModel();
+        
+        const response = await fetch(`${getApiEndpoint()}/chat/completions`, {
+          method: 'POST',
+          headers: getApiHeaders(),
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: `Create an engaging conversation starter for these agents: ${agents.map(a => `${a.name} (${a.persona})`).join(', ')}`
+              },
+              {
+                role: 'user',
+                content: 'Generate a thought-provoking prompt that would lead to an interesting discussion between these agents.'
+              }
+            ],
+            temperature: 0.8,
+            max_tokens: 100
+          })
+        });
+        
+        if (!response.ok) throw new Error('API request failed');
+        
+        const data = await response.json();
+        if (data && data.choices && Array.isArray(data.choices) && data.choices[0]) {
+          let enhancedPrompt = null;
+          if (data.choices[0].message) {
+            const message = data.choices[0].message;
+            if (message.content && message.content.trim()) {
+              enhancedPrompt = message.content;
+            } else if (message.reasoning && message.reasoning.trim()) {
+              enhancedPrompt = message.reasoning;
+            }
+          } else if (data.choices[0].text) {
+            enhancedPrompt = data.choices[0].text;
+          }
+          
+          if (enhancedPrompt) {
+            const promptEl = document.getElementById('initialPrompt');
+            if (promptEl) promptEl.value = enhancedPrompt;
+          } else {
+            console.warn('No content found in prompt enhancement API response. Response structure:', JSON.stringify(data.choices[0], null, 2));
+          }
+        } else {
+          console.warn('Invalid API response for prompt enhancement:', data);
+        }
+        
+        if (btn) btn.textContent = '▶️ Start';
+      } catch (error) {
+        console.error('Prompt enhancement failed:', error);
+        if (btn) btn.textContent = '▶️ Start';
+        alert('Failed to enhance prompt. Make sure LM Studio is running.');
+      }
+    }
+    
+    async function runAutoMode() {
+      const maxTurnsEl = document.getElementById('maxTurns');
+      const turnDelayEl = document.getElementById('turnDelay');
+      
+      const maxTurns = maxTurnsEl ? parseInt(maxTurnsEl.value) : 10;
+      const turnDelay = turnDelayEl ? parseInt(turnDelayEl.value) : 1000;
+      
+      // Get selected starting agent
+      const startingAgentEl = document.getElementById('startingAgent');
+      const startingIndex = startingAgentEl ? parseInt(startingAgentEl.value) : 0;
+      let currentAgent = agents[startingIndex] || agents[0];
+      
+      while (currentTurn < maxTurns && isRunning && !isPaused) {
+        try {
+          // Get conversation context
+          const context = conversation.filter(m => m.branch === currentBranch);
+          const history = buildMessageHistory(currentAgent, context);
+          
+          // Create streaming message
+          const streamingMsg = addMessage(currentAgent.name, '', { isStreaming: true });
+          
+          // Generate response with real-time streaming
+          const response = await streamCompletionWithUI(currentAgent, history, streamingMsg);
+          
+          // Update conversation record
+          const nextAgentMatch = response.match(/\[To:\s*(.+?)\]/i);
+          const cleanContent = response.replace(/\[To:.*?\]/i, '').trim();
+          const streamingNextAgent = nextAgentMatch ? nextAgentMatch[1].trim() : null;
+          
+          // Add to conversation history
+          conversation.push({ 
+            id: streamingMsg.id.replace('msg-', ''),
+            agent: currentAgent.name, 
+            content: cleanContent, 
+            nextAgent: streamingNextAgent,
+            branch: currentBranch,
+            userInserted: false
+          });
+          
+          // Show next agent indicator
+          if (streamingNextAgent) {
+            const contentDiv = streamingMsg.querySelector('.message-content');
+            const nextDiv = document.createElement('div');
+            nextDiv.style.cssText = 'font-size: 12px; color: var(--text-secondary); margin-top: 8px;';
+            nextDiv.textContent = `→ ${streamingNextAgent}`;
+            contentDiv.appendChild(nextDiv);
+          }
+          
+          // Find next agent
+          const match = response.match(/\[To:\s*(.+?)\]/i);
+          let nextName = match ? match[1].trim() : null;
+          let suggestedNextAgent = agents.find(a => a.name.toLowerCase() === nextName?.toLowerCase());
+          
+          // AI suggestion if no valid agent specified
+          if ((!suggestedNextAgent || suggestedNextAgent.id === currentAgent.id) && aiFeatures.autoSuggest) {
+            suggestedNextAgent = await suggestNextAgent();
+          }
+          
+          // Final fallback: pick a random different agent if AI suggestion fails
+          if (!suggestedNextAgent || suggestedNextAgent.id === currentAgent.id) {
+            const availableAgents = agents.filter(a => a.id !== currentAgent.id);
+            if (availableAgents.length > 0) {
+              suggestedNextAgent = availableAgents[Math.floor(Math.random() * availableAgents.length)];
+              
+              // Check if AI features failed and inform user
+              if (aiFeatures.autoSuggest) {
+                addMessage('System', `⚠️ AI suggestion failed (check LM Studio connection). Randomly selected ${suggestedNextAgent.name} to continue.`);
+              } else {
+                addMessage('System', `🎲 Randomly selected ${suggestedNextAgent.name} to continue the conversation.`);
+              }
+            } else {
+              addMessage('System', `❌ Conversation ended — no other agents available.`);
+              break;
+            }
+          }
+          
+          currentAgent = suggestedNextAgent;
+          currentTurn++;
+          
+          // Summarize periodically
+          if (currentTurn % 5 === 0 && aiFeatures.summarization) {
+            const summary = await summarizeConversation();
+            if (summary) {
+              console.log('Summary:', summary);
+            }
+          }
+          
+          // Wait before next turn
+          if (turnDelay > 0 && !isPaused) {
+            await new Promise(resolve => setTimeout(resolve, turnDelay));
+          }
+          
+        } catch (error) {
+          console.error('Error:', error);
+          thinkingMsg.remove();
+          
+          let errorMsg = error.message;
+          if (error.message.includes('Failed to fetch')) {
+            errorMsg = 'Connection failed. Make sure LM Studio is running and accessible.';
+          } else if (error.message.includes('HTTP 404')) {
+            errorMsg = 'Model not found. Check your model selection in agent settings.';
+          } else if (error.message.includes('HTTP 500')) {
+            errorMsg = 'Server error. Try reducing message length or changing model settings.';
+          }
+          
+          addMessage('System', `❌ ${currentAgent.name} encountered an error: ${errorMsg}`);
+          
+          // Ask user if they want to continue with next agent or stop
+          if (confirm('An error occurred. Would you like to continue with the next agent?')) {
+            // Try to find next agent and continue
+            const fallbackAgent = agents.find(a => a.id !== currentAgent.id);
+            if (fallbackAgent) {
+              currentAgent = fallbackAgent;
+              currentTurn++;
+              continue;
+            }
+          }
+          break;
+        }
+      }
+      
+      if (currentTurn >= maxTurns) {
+        addMessage('System', `✅ Conversation completed after ${maxTurns} turns.`);
+        
+        // Final analysis
+        if (aiFeatures.enabled) {
+          const topics = await extractTopics();
+          if (topics.length > 0) {
+            addMessage('System', `📌 Main topics: ${topics.join(', ')}`);
+          }
+        }
+      }
+      
+      isRunning = false;
+      updateUI();
+    }
+    
+    async function nextTurn() {
+      if (!isRunning) return;
+      
+      const maxTurnsEl = document.getElementById('maxTurns');
+      const maxTurns = maxTurnsEl ? parseInt(maxTurnsEl.value) : 10;
+      
+      if (currentTurn >= maxTurns) {
+        addMessage('System', `✅ Maximum turns reached.`);
+        stopConversation();
+        return;
+      }
+      
+      // Find current agent
+      const lastMsg = conversation[conversation.length - 1];
+      if (!lastMsg) return;
+      
+      let currentAgent;
+      if (lastMsg.nextAgent) {
+        currentAgent = agents.find(a => a.name === lastMsg.nextAgent);
+      } else if (aiFeatures.autoSuggest) {
+        currentAgent = await suggestNextAgent();
+      }
+      
+      if (!currentAgent) {
+        addMessage('System', '❌ No next agent specified.');
+        return;
+      }
+      
+      // Generate response
+      const thinkingMsg = addMessage(currentAgent.name, '', { isThinking: true });
+      
+      try {
+        const context = conversation.filter(m => m.branch === currentBranch);
+        const history = buildMessageHistory(currentAgent, context);
+        const response = await streamCompletion(currentAgent, history);
+        
+        thinkingMsg.remove();
+        addMessage(currentAgent.name, response);
+        
+        currentTurn++;
+      } catch (error) {
+        console.error('Error:', error);
+        thinkingMsg.remove();
+        addMessage('System', `❌ Error: ${error.message}`);
+      }
+    }
+    
+    function pauseConversation() {
+      isPaused = !isPaused;
+      document.getElementById('pauseBtn').textContent = isPaused ? '▶️ Resume' : '⏸️ Pause';
+      updateUI();
+      
+      if (!isPaused && document.getElementById('autoMode').checked) {
+        runAutoMode();
+      }
+    }
+    
+    function stopConversation() {
+      isRunning = false;
+      isPaused = false;
+      updateUI();
+    }
+    
+    function clearChat() {
+      conversation = [];
+      messageHistory = {};
+      currentBranch = 'main';
+      branches = [];
+      const container = document.getElementById('chatContainer');
+      if (container) {
+        container.innerHTML = '';
+      }
+      saveToStorage();
+    }
+    
+    function exportChat() {
+      let format = prompt('Export format: text, markdown, or json?', 'text');
+      if (!format) return;
+      
+      format = format.toLowerCase();
+      let content, filename, mimeType;
+      
+      if (format === 'json') {
+        content = JSON.stringify({
+          agents,
+          conversation,
+          branches,
+          metadata: {
+            date: new Date().toISOString(),
+            turns: currentTurn
+          }
+        }, null, 2);
+        filename = 'conversation.json';
+        mimeType = 'application/json';
+      } else if (format === 'markdown') {
+        content = `# Multi-Agent Conversation\n\n`;
+        content += `**Date:** ${new Date().toLocaleString()}\n\n`;
+        content += `**Agents:**\n${agents.map(a => `- ${a.name}: ${a.persona}`).join('\n')}\n\n`;
+        content += `## Conversation\n\n`;
+        conversation.forEach(msg => {
+          content += `### ${msg.agent}\n\n${msg.content}\n\n`;
+          if (msg.nextAgent) {
+            content += `*→ ${msg.nextAgent}*\n\n`;
+          }
+        });
+        filename = 'conversation.md';
+        mimeType = 'text/markdown';
+      } else {
+        content = `Multi-Agent Conversation Export\n`;
+        content += `================================\n\n`;
+        content += `Date: ${new Date().toLocaleString()}\n`;
+        content += `Agents: ${agents.map(a => a.name).join(', ')}\n\n`;
+        conversation.forEach(msg => {
+          content += `${msg.agent}:\n${msg.content}\n`;
+          if (msg.nextAgent) {
+            content += `[To: ${msg.nextAgent}]\n`;
+          }
+          content += '\n---\n\n';
+        });
+        filename = 'conversation.txt';
+        mimeType = 'text/plain';
+      }
+      
+      const blob = new Blob([content], { type: mimeType });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+    
+    function showBranches() {
+      if (branches.length === 0) {
+        alert('No branches created yet. Use the branch button on any message to create a branch.');
+        return;
+      }
+      
+      const branchList = ['main', ...branches.map(b => b.name)];
+      const selected = prompt(`Current branch: ${currentBranch}\n\nAvailable branches:\n${branchList.join('\n')}\n\nEnter branch name to switch:`);
+      
+      if (selected && branchList.includes(selected)) {
+        switchBranch(selected);
+      }
+    }
+    
+    function switchBranch(branchName) {
+      currentBranch = branchName;
+      
+      if (branchName === 'main') {
+        renderConversation();
+      } else {
+        const branch = branches.find(b => b.name === branchName);
+        if (branch) {
+          conversation = [...branch.messages];
+          renderConversation();
+        }
+      }
+      
+      alert(`Switched to branch: ${branchName}`);
+    }
+    
+    function updateMessageChain(fromIndex) {
+      // Re-process messages after an edit/regeneration
+      // This is a placeholder for more complex chain updating logic
+      saveToStorage();
+    }
+    
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    }
+    
+    // Storage
+    function saveToStorage() {
+      try {
+        const promptEl = document.getElementById('initialPrompt');
+        const maxTurnsEl = document.getElementById('maxTurns');
+        const autoModeEl = document.getElementById('autoMode');
+        const turnDelayEl = document.getElementById('turnDelay');
+        const systemPromptEl = document.getElementById('systemPrompt');
+        const startingAgentEl = document.getElementById('startingAgent');
+        const maxContextEl = document.getElementById('maxContextMessages');
+        const smartTrimmingEl = document.getElementById('smartContextTrimming');
+        const defaultAIModelEl = document.getElementById('defaultAIModel');
+        const apiEndpointEl = document.getElementById('apiEndpoint');
+        const apiKeyEl = document.getElementById('apiKey');
+        
+        const data = {
+          agents,
+          agentColors,
+          conversation,
+          branches,
+          currentBranch,
+          initialPrompt: promptEl ? promptEl.value : '',
+          maxTurns: maxTurnsEl ? maxTurnsEl.value : '10',
+          autoMode: autoModeEl ? autoModeEl.checked : true,
+          turnDelay: turnDelayEl ? turnDelayEl.value : '1000',
+          systemPrompt: systemPromptEl ? systemPromptEl.value : '',
+          startingAgent: startingAgentEl ? startingAgentEl.value : '0',
+          maxContextMessages: maxContextEl ? maxContextEl.value : '20',
+          smartContextTrimming: smartTrimmingEl ? smartTrimmingEl.checked : true,
+          defaultAIModel: defaultAIModelEl ? defaultAIModelEl.value : '',
+          apiEndpoint: apiEndpointEl ? apiEndpointEl.value : 'http://localhost:1234/v1',
+          apiKey: apiKeyEl ? apiKeyEl.value : '',
+          aiFeatures
+        };
+        localStorage.setItem('multiAgentChat', JSON.stringify(data));
+      } catch (error) {
+        console.error('Error saving to storage:', error);
+      }
+    }
+    
+    function loadFromStorage() {
+      const saved = localStorage.getItem('multiAgentChat');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          agents = data.agents || [];
+          agentColors = data.agentColors || {};
+          conversation = data.conversation || [];
+          branches = data.branches || [];
+          currentBranch = data.currentBranch || 'main';
+          
+          // Safely set DOM values
+          const initialPromptEl = document.getElementById('initialPrompt');
+          if (initialPromptEl) initialPromptEl.value = data.initialPrompt || '';
+          
+          const maxTurnsEl = document.getElementById('maxTurns');
+          if (maxTurnsEl) maxTurnsEl.value = data.maxTurns || 10;
+          
+          const autoModeEl = document.getElementById('autoMode');
+          if (autoModeEl) autoModeEl.checked = data.autoMode !== false;
+          
+          const turnDelayEl = document.getElementById('turnDelay');
+          if (turnDelayEl) turnDelayEl.value = data.turnDelay || 1000;
+          
+          const systemPromptEl = document.getElementById('systemPrompt');
+          if (systemPromptEl && data.systemPrompt) {
+            systemPromptEl.value = data.systemPrompt;
+          }
+          
+          const startingAgentEl = document.getElementById('startingAgent');
+          if (startingAgentEl && data.startingAgent) {
+            startingAgentEl.value = data.startingAgent;
+          }
+          
+          const maxContextEl = document.getElementById('maxContextMessages');
+          if (maxContextEl && data.maxContextMessages) {
+            maxContextEl.value = data.maxContextMessages;
+          }
+          
+          const smartTrimmingEl = document.getElementById('smartContextTrimming');
+          if (smartTrimmingEl && data.smartContextTrimming !== undefined) {
+            smartTrimmingEl.checked = data.smartContextTrimming;
+          }
+          
+          const defaultAIModelEl = document.getElementById('defaultAIModel');
+          if (defaultAIModelEl && data.defaultAIModel !== undefined) {
+            defaultAIModelEl.value = data.defaultAIModel;
+          }
+          
+          const apiEndpointEl = document.getElementById('apiEndpoint');
+          if (apiEndpointEl && data.apiEndpoint !== undefined) {
+            apiEndpointEl.value = data.apiEndpoint;
+          }
+          
+          const apiKeyEl = document.getElementById('apiKey');
+          if (apiKeyEl && data.apiKey !== undefined) {
+            apiKeyEl.value = data.apiKey;
+          }
+          
+          if (data.aiFeatures) {
+            aiFeatures = data.aiFeatures;
+            const aiEnabledEl = document.getElementById('aiEnabled');
+            if (aiEnabledEl) aiEnabledEl.checked = aiFeatures.enabled;
+            
+            const autoSuggestEl = document.getElementById('autoSuggest');
+            if (autoSuggestEl) autoSuggestEl.checked = aiFeatures.autoSuggest;
+            
+            const summarizationEl = document.getElementById('summarization');
+            if (summarizationEl) summarizationEl.checked = aiFeatures.summarization;
+            
+            const topicExtractionEl = document.getElementById('topicExtraction');
+            if (topicExtractionEl) topicExtractionEl.checked = aiFeatures.topicExtraction;
+          }
+          
+          renderConversation();
+        } catch (error) {
+          console.error('Error loading from storage:', error);
+          // Initialize with defaults if loading fails
+          initializeDefaults();
+        }
+      } else {
+        // Initialize with defaults
+        initializeDefaults();
+      }
+      
+      // Load theme
+      const theme = localStorage.getItem('theme');
+      if (theme === 'dark') {
+        document.body.classList.add('dark');
+      }
+    }
+    
+    function initializeDefaults() {
+      // Ensure agents array exists
+      if (!Array.isArray(agents)) {
+        agents = [];
+      }
+      
+      // Default setup - ensure we have at least 3 agents
+      if (agents.length === 0) {
+        for (let i = 0; i < 3; i++) {
+          addAgent();
+        }
+      }
+    }
+    
+    function saveSettings() {
+      const aiEnabledEl = document.getElementById('aiEnabled');
+      const autoSuggestEl = document.getElementById('autoSuggest');
+      const summarizationEl = document.getElementById('summarization');
+      const topicExtractionEl = document.getElementById('topicExtraction');
+      
+      aiFeatures = {
+        enabled: aiEnabledEl ? aiEnabledEl.checked : true,
+        autoSuggest: autoSuggestEl ? autoSuggestEl.checked : true,
+        summarization: summarizationEl ? summarizationEl.checked : true,
+        topicExtraction: topicExtractionEl ? topicExtractionEl.checked : true
+      };
+      saveToStorage();
+      alert('Settings saved!');
+    }
+    
+    // Cleanup function
+    function cleanup() {
+      if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+        connectionCheckInterval = null;
+      }
+    }
+    
+    // Event listeners
+    window.onclick = (event) => {
+      if (event.target && event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+      }
+    };
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', cleanup);
+    window.addEventListener('unload', cleanup);
+    
+    // Enhanced error handler
+    window.onerror = (msg, source, lineno, colno, error) => {
+      console.error('Global error:', { msg, source, lineno, colno, error });
+      
+      // Show user-friendly error for critical failures
+      if (msg.includes('fetch') || msg.includes('network')) {
+        updateConnectionStatus(false);
+      }
+      
+      return true; // Prevent default error handling
+    };
+    
+    // Handle unhandled promise rejections
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      
+      if (event.reason && event.reason.message) {
+        if (event.reason.message.includes('fetch') || event.reason.message.includes('network')) {
+          updateConnectionStatus(false);
+        }
+      }
+      
+      event.preventDefault();
+    });
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
