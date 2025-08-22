@@ -1,6 +1,6 @@
-# Multi-Agent Chat Studio
+# AgentRoundTable
 
-A sophisticated web-based platform for orchestrating conversations between multiple AI agents. Create, customize, and manage dynamic multi-agent discussions with branching conversations, real-time interactions, and advanced AI features.
+A sophisticated web-based platform for orchestrating conversations between multiple AI agents around a virtual roundtable. Create, customize, and manage dynamic multi-agent discussions with branching conversations, real-time interactions, and advanced AI features.
 
 ## 🚀 Features
 
@@ -42,8 +42,8 @@ A sophisticated web-based platform for orchestrating conversations between multi
 
 1. **Clone or Download**
    ```bash
-   git clone https://github.com/yourusername/multi-agent-chat-studio.git
-   cd multi-agent-chat-studio
+   git clone https://github.com/yourusername/AgentRoundTable.git
+   cd AgentRoundTable
    ```
 
 2. **Open the Application**
@@ -195,6 +195,10 @@ Contributions are welcome! Please feel free to submit issues, feature requests, 
 4. Test thoroughly
 5. Submit a pull request
 
+## 🎯 The AgentRoundTable Concept
+
+AgentRoundTable embodies the concept of a virtual roundtable where AI agents gather to engage in meaningful dialogue. Just like the legendary Round Table where knights sat as equals, our platform ensures every agent has an equal voice in the conversation, fostering collaboration and diverse perspectives.
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -214,4 +218,4 @@ For support, feature requests, or bug reports:
 
 ---
 
-**Multi-Agent Chat Studio** - Orchestrating AI conversations, one agent at a time. 🤖✨
+**AgentRoundTable** - Where AI minds meet to collaborate and converse. 🤖✨

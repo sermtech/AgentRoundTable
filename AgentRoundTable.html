@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Multi-Agent Chat Studio</title>
+  <title>AgentRoundTable</title>
   <style>
     * {
       box-sizing: border-box;
@@ -623,7 +623,7 @@
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <h3 style="margin: 0; font-size: 18px;">🤖 Agent Studio</h3>
+        <h3 style="margin: 0; font-size: 18px;">🤖 Agent Round Table</h3>
         <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">🌓</button>
       </div>
       
@@ -790,7 +790,7 @@ Each agent takes turns speaking. At the end of your message, you must decide who
     <div class="main-content">
       <div class="chat-header">
         <button class="icon-btn" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
-        <h3 style="margin: 0; font-size: 16px; flex: 1;">Multi-Agent Conversation</h3>
+        <h3 style="margin: 0; font-size: 16px; flex: 1;">AgentRoundTable</h3>
         <div id="connectionStatus" style="font-size: 12px; color: var(--text-secondary); margin-right: 12px;">
           <span id="statusIndicator">🔴</span> <span id="statusText">Disconnected</span>
         </div>
@@ -3021,7 +3021,7 @@ Each agent takes turns speaking. At the end of your message, you must decide who
         filename = 'conversation.json';
         mimeType = 'application/json';
       } else if (format === 'markdown') {
-        content = `# Multi-Agent Conversation\n\n`;
+        content = `# AgentRoundTable Conversation\n\n`;
         content += `**Date:** ${new Date().toLocaleString()}\n\n`;
         content += `**Agents:**\n${agents.map(a => `- ${a.name}: ${a.persona}`).join('\n')}\n\n`;
         content += `## Conversation\n\n`;
@@ -3034,7 +3034,7 @@ Each agent takes turns speaking. At the end of your message, you must decide who
         filename = 'conversation.md';
         mimeType = 'text/markdown';
       } else {
-        content = `Multi-Agent Conversation Export\n`;
+        content = `AgentRoundTable Conversation Export\n`;
         content += `================================\n\n`;
         content += `Date: ${new Date().toLocaleString()}\n`;
         content += `Agents: ${agents.map(a => a.name).join(', ')}\n\n`;
